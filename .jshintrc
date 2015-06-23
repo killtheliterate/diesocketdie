@@ -1,0 +1,8 @@
+{
+  "asi": false,
+  "esnext": true,
+  "node": true
+
+  "globals": {
+  }
+}
