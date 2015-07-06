@@ -2,11 +2,12 @@
   "name": "diesocketdie",
   "version": "1.0.0",
   "description": "Stress test a websocket, bruh.",
-  "main": "index.js",
+  "preferGlobal": true,
   "scripts": {
-    "start": "node ./index.js",
-    "start:dev": "DEBUG=diesocketdie:* ./node_modules/.bin/nodemon ./index.js --address 'ws://A_WEBSOCKET' --clientcount 25",
     "test": "./node_modules/.bin/standard;"
+  },
+  "bin": {
+    "diesocketdie": "./bin/run" 
   },
   "author": "Garrett Dawson <killtheliterate@gmail.com> (http://thedrearlight.com/)",
   "license": "ISC",

@@ -2,15 +2,23 @@
 require('babel/register')
 
 // vendor
-var argv = require('yargs').argv
 var assign = require('lodash/object/assign')
 var log = require('debug')('diesocketdie:index')
+var argv = require('yargs')
+  .demand(['a', 'cc'])
+  .alias({
+    'a': 'address',
+    'cc': 'clientcount'
+    // add to this as you like
+  })
+  .usage('Usage: $0 --a [string] --cc[num]')
+  .argv
 
 // lib
-var connect = require('./src/make_connections')
-var fixture = require('./fixture/messages')
-var parse = require('./src/parse')
-var sendMessages = require('./src/send_messages')
+var connect = require('../src/make_connections')
+var fixture = require('../fixture/messages')
+var parse = require('../src/parse')
+var sendMessages = require('../src/send_messages')
 
 log('Five... Four... uh, Five... Five... NOW NOW NOW NOW NOW NOW')
 
