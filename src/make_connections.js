@@ -1,58 +1,48 @@
 // vendor
-import R from 'ramda'
-import debug from 'debug'
-import {EventEmitter} from 'events'
+// import debug from 'debug'
+import oS from 'observable-socket'
+import wS from 'ws'
+import { EventEmitter } from 'events'
 
-// lib
-import Connection from './socket'
+// const log = debug('diesocketdie:make_connections')
 
-const log = debug('diesocketdie:make_connections')
-const heartbeat = 25 * 1000
-const sockets = []
+/**
+ * `export default main :: Integer -> (Integer -> String -> Promise [Observable])`
+ */
+function main (heartbeat) {
+    const sockets = []
+    const socketPromises = []
 
-let interval = void 0
-let index = 0
+    function makeConnection (vent, clientCount, address) {
+        if (clientCount === 0) {
+            vent.emit('finished')
+        } else {
+            const ws = new wS(address)
+            ws.setMaxListeners(100) // quiet event listener warning
 
-function makeConnection (clients, address, vent) {
-  return function () {
-    index = index + 1
+            const os = new oS(ws)
 
-    let ws = new Connection(index)
+            os._id = clientCount // give the stream a label
 
-    sockets.push(wrap(ws))
-
-    ws.connect(address)
-
-    if (index === clients) {
-      clearInterval(interval)
-      vent.emit('finished')
+            sockets.push(os)
+            socketPromises.push(os.observable.first().toPromise())
+            setTimeout(() => makeConnection(vent, clientCount - 1, address), heartbeat)
+        }
     }
-  }
+
+    return function makeConnections (clientCount, address) {
+        const vent = new EventEmitter()
+
+        return new Promise(function (resolve, reject) {
+            vent.on('finished', function () {
+                Promise.all(socketPromises)
+                    .then(() => resolve(sockets))
+                    .catch(reject)
+            })
+
+            makeConnection(vent, clientCount, address)
+        })
+    }
 }
 
-function wrap (ws) {
-  return new Promise(function (resolve, reject) {
-    ws.on('connected', function (f) {
-      resolve(ws)
-    })
-
-    ws.on('error', function (f) {
-      reject(ws)
-    })
-  })
-}
-
-function makeConnections (clients, address) {
-  let vent = new EventEmitter()
-  let connect = makeConnection(clients, address, vent)
-
-  return new Promise(function(resolve, reject) {
-    vent.on('finished', function() {
-      resolve(Promise.all(sockets))
-    })
-
-    interval = setInterval(connect, heartbeat/clients)
-  })
-}
-
-export default makeConnections
+export default main
