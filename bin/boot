@@ -1,0 +1,4 @@
+#!/usr/bin/env node
+var start = require('../dist/index')
+
+start()
