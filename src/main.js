@@ -12,23 +12,64 @@ import makeConnections from './make_connections'
 const log = debug('diesocketdie:index')
 
 const argv = yargs
-    .demand(['a'])
-    .alias({
-        'a': 'address',
-
-        'cc': 'clientcount',
-        'hb': 'heartbeat',
-        'i': 'interactive',
-        'p': 'ping',
-        'pi': 'pinginterval',
-        'pm': 'pingmessage',
-        'ri': 'reconnectinterval',
+    .alias('v', 'version')
+    .version(() => require('../package').version)
+    .alias('h', 'help')
+    .help('help')
+    .usage('Usage: $0 --ad [string] --cc [number] -pwi')
+    .options({
+        'ad': {
+            demand: true,
+            alias: 'address',
+            describe: 'websocket address',
+            type: 'string',
+        },
+        'cc': {
+            alias: 'clientcount',
+            describe: 'websocket client count',
+            type: 'number',
+        },
+        'hb': {
+            alias: 'heartbeat',
+            describe: 'connection spinup time',
+            type: 'number',
+        },
+        'pi': {
+            alias: 'pinginterval',
+            describe: 'ping interval',
+            type: 'number',
+        },
+        'pm': {
+            alias: 'pingmessage',
+            describe: 'ping message',
+            type: 'string',
+        },
+        'ri': {
+            alias: 'reconnectinterval',
+            describe: 'reconnection interval',
+            type: 'number',
+        },
     })
-    .usage('Usage: $0 -a [string] -cc [num] -hb [num] -i -p -pi [num] -pm [string] -rf [num]')
-    .help()
+    .options({
+        'p': {
+            alias: 'ping',
+            describe: 'ping',
+            type: 'boolean',
+        },
+        'w': {
+            alias: 'writeout',
+            describe: 'write to stdout',
+            type: 'boolean',
+        },
+        'i': {
+            alias: 'interactive',
+            describe: 'start REPL',
+            type: 'boolean',
+        },
+    })
     .argv
 
-const clientCount = argv.clientCount || 1
+const clientCount = argv.clientcount || 1
 const heartbeat = argv.heartbeat ? argv.heartbeat / clientCount : 0
 const pingInterval = argv.pinginterval || 3 * 1000
 const pingMessage = argv.pingmessage || JSON.stringify({PING: true})
@@ -94,8 +135,10 @@ function merge (os) {
     Rx.Observable
         .merge(map(el => el.observable, os))
         .subscribe(
-            function onNext () {
-                // noop
+            function onNext (msg) {
+                if (argv.writeout) {
+                    process.stdout.write(msg)
+                }
             },
 
             function onError () {
