@@ -20,7 +20,7 @@
   "dependencies": {
     "debug": "^2.2.0",
     "lodash": "^4.6.1",
-    "observable-socket": "^2.1.0",
+    "observable-socket": "^6.0.1",
     "ramda": "^0.19.1",
     "rx": "^4.1.0",
     "ws": "^1.0.1",
