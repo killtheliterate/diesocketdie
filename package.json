@@ -18,7 +18,7 @@
   "author": "Garrett Dawson <killtheliterate@gmail.com> (http://thedrearlight.com/)",
   "license": "ISC",
   "dependencies": {
-    "debug": "^2.2.0",
+    "debug": "^4.1.1",
     "lodash": "^4.6.1",
     "observable-socket": "^2.1.0",
     "ramda": "^0.19.1",
