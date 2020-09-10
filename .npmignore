@@ -2,6 +2,7 @@
 .babelrc
 .editorconfig
 .eslintrc
+.github
 .jshintignore
 karma.conf.js
 node_modules

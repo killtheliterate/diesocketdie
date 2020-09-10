@@ -1,12 +1,9 @@
 // vendor
 import test from 'tape'
-// import debug from 'debug'
 
 // lib
-import makeConnections from './../../src/make_connections'
+import { initialize as makeConnections } from './../../dist/make_connections'
 import Server from  './../fixture/server'
-
-// const log = debug('diesocketdie:test')
 
 function close (server, cb) {
     server.close(function () {
