@@ -1,19 +1,26 @@
-// vendor
 import debug from 'debug'
 import path from 'path'
 import repl from 'repl'
 import yargs from 'yargs'
-import { Rx } from 'rx'
 import { map } from 'ramda'
+import { merge } from 'rxjs'
 
-// lib
-import makeConnections from './make_connections'
+// ---------------------------------------------------------------------------
+
+import {
+    Socket,
+    initialize
+} from './make_connections'
+
+// ---------------------------------------------------------------------------
+
+const __version = require('../package').version
 
 const log = debug('diesocketdie:index')
 
 const argv = yargs
     .alias('v', 'version')
-    .version(() => require('../package').version)
+    .version(__version)
     .alias('h', 'help')
     .help('help')
     .usage('Usage: $0 --ad [string] --cc [number] -pwi')
@@ -69,32 +76,32 @@ const argv = yargs
     })
     .argv
 
-const clientCount = argv.clientcount || 1
-const heartbeat = argv.heartbeat ? argv.heartbeat / clientCount : 0
-const pingInterval = argv.pinginterval || 3 * 1000
-const pingMessage = argv.pingmessage || JSON.stringify({PING: true})
-const reconnectInterval = argv.reconnectinterval || 30 * 1000
+const clientCount = argv.cc || 1
+const heartbeat = argv.hb ? argv.hb / clientCount : 0
+const pingInterval = argv.pi || 3 * 1000
+const pingMessage = argv.pm || JSON.stringify({ PING: true })
+const reconnectInterval = argv.ri || 30 * 1000
 
-function send (os) {
-    return function (msg) {
-        const sends = map(function (socket) {
-            socket.send(JSON.stringify(msg))
+function send (sockets: Socket[]) {
+    return function (msg: any) {
+        const sends = map(function (socket: Socket) {
+            socket.up(JSON.stringify(msg))
         })
 
-        sends(os)
+        sends(sockets)
     }
 }
 
-function sendFile (os) {
-    return function (filePath) {
+function sendFile (sockets: Socket[]) {
+    return function (filePath: string) {
         const data = require(path.resolve(process.cwd(), filePath))
 
-        send(os)(data)
+        send(sockets)(data)
     }
 }
 
-const debugSub = map(function (socket) {
-    socket.observable.subscribe(
+const debugSub = map(function (socket: Socket) {
+    socket.down.subscribe(
         function onNext (message) {
             log(`${socket._id}: MESSAGE`, message)
         },
@@ -112,63 +119,60 @@ const debugSub = map(function (socket) {
     return socket
 })
 
-function setUp (os) {
-    process.stdout.write(`Connected to ${argv.address}`)
+function setUp (sockets: Socket[]) {
+    process.stdout.write(`Connected to ${argv.ad}\n`)
 
-    if (argv.interactive) {
+    if (argv.i) {
         const replServer = repl.start({
             prompt: 'diesocketdie> ',
         })
 
-        replServer.context.send = send(os)
-        replServer.context.sendFile = sendFile(os)
+        replServer.context.send = send(sockets)
+        replServer.context.sendFile = sendFile(sockets)
     }
 
-    if (argv.ping) {
-        map(os => setInterval(() => os.send(pingMessage), pingInterval), os)
+    if (argv.p) {
+        map(os => setInterval(() => os.up(pingMessage), pingInterval), sockets)
     }
 
-    return os
+    return sockets
 }
 
-function merge (os) {
-    Rx.Observable
-        .merge(map(el => el.observable, os))
+function _merge (sockets: Socket[]) {
+    merge(...map(el => el.down, sockets))
         .subscribe(
             function onNext (msg) {
-                if (argv.writeout) {
-                    process.stdout.write(msg)
+                if (argv.w) {
+                    process.stdout.write(`Heard: ${JSON.stringify(msg.data, null, 2)}\n`)
                 }
             },
 
             function onError () {
-                process.stderr.write(`Error: reconnecting in ${reconnectInterval / 1000} seconds`)
+                process.stderr.write(`Error: reconnecting in ${reconnectInterval / 1000} seconds\n`)
 
                 setTimeout(main, reconnectInterval)
             },
 
             function onComplete () {
-                process.stdout.write(`Complete: reconnecting in ${reconnectInterval / 1000} seconds`)
+                process.stdout.write(`Complete: reconnecting in ${reconnectInterval / 1000} seconds\n`)
 
                 setTimeout(main, reconnectInterval)
             }
     )
 
-    return os
+    return sockets
 }
 
-function main () {
-    process.stdout.write(`Just... Yup, about to crush/stomp ${argv.address} with ${clientCount} connections!`)
+export function main () {
+    process.stdout.write(`Just... Yup, about to crush/stomp ${argv.ad} with ${clientCount} connections! \n`)
 
-    makeConnections(heartbeat)(clientCount, argv.address)
+    initialize(heartbeat)(clientCount, argv.ad)
         .then(setUp)
         .then(debugSub)
-        .then(merge)
+        .then(_merge)
         .catch(function (err) {
-            process.stderr.write(`${err}`)
+            process.stderr.write(`No good... ${err}\n`)
 
             process.exit()
         })
 }
-
-export default main
