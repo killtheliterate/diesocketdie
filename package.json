@@ -36,7 +36,7 @@
     "@types/node": "^15.0.1",
     "@types/ramda": "^0.27.17",
     "@types/ws": "^7.2.6",
-    "@types/yargs": "^16.0.0",
+    "@types/yargs": "^17.0.0",
     "babel-tape-runner": "^3.0.0",
     "semantic-release": "^17.1.1",
     "tape": "^5.1.0",
