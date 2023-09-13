@@ -5,6 +5,11 @@ updates:
 
   directory: "/"
   
+  groups:
+    patches:
+      update-types:
+        - 'patch'
+  
   schedule:
     interval: monthly
     time: '12:00'
